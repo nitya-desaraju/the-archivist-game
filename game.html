@@ -1,4 +1,4 @@
-<!DOCTYPE html> u
+<!DOCTYPE html> jjbjhnjgjgjhjbjbjbbHVJJJJJJJKJJ
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -30,6 +30,7 @@
         @keyframes flicker {
             0% { opacity: 0.27861; } 5% { opacity: 0.34769; } 10% { opacity: 0.54164; } 15% { opacity: 0.96002; } 20% { opacity: 0.18394; } 25% { opacity: 0.83097; } 30% { opacity: 0.65585; } 35% { opacity: 0.52883; } 40% { opacity: 0.38548; } 45% { opacity: 0.51481; } 50% { opacity: 0.95653; } 55% { opacity: 0.2549; } 60% { opacity: 0.3203; } 65% { opacity: 0.79529; } 70% { opacity: 0.2493; } 75% { opacity: 0.54337; } 80% { opacity: 0.94025; } 85% { opacity: 0.43443; } 90% { opacity: 0.21339; } 95% { opacity: 0.86248; } 100% { opacity: 0.49482; }
         }
+        #video { display: none; }
         .scanline {
             position: fixed;
             top: 0;
@@ -46,46 +47,205 @@
             pointer-events: none;
             z-index: 1000;
         }
+        [data-is-transferred="true"] { text-decoration: line-through; color: #555; }
     </style>
 </head>
 
 <body class="bg-black text-gray-300 flex items-center justify-center min-h-screen p-4">
     <div class="scanline"></div>
     <div id="game-container" class="w-full max-w-6xl h-full relative crt-effect">
+        <video id="video" playsinline autoplay muted></video>
         <div id="start-screen" class="text-center flex flex-col justify-center items-center h-full">
             <h1 class="text-5xl mb-4 text-red-700" style="font-family: 'VT323', monospace;">Title</h1>
             <p class="mb-6">Server DS-04 is experiencing critical data corruption.</p>
             <p class="mb-8">Your mission: Transfer all 20 corrupted files to the secure server before decommissioning DS-04.</p>
             <p class="mb-8 text-yellow-400">Warning: An unknown anomaly is protecting the corrupted data. Avoid detection.</p>
             <button id="start-button" class="bg-gray-800 text-green-400 border border-green-400 px-6 py-2 rounded-none hover:bg-green-400 hover:text-gray-900 transition-all">Initialize Connection</button>
-            <p id="permission-status" class="mt-4 hidden"></p>
+            <p id="permission-error" class="text-red-500 mt-4 hidden">Error: Camera and Microphone access are required.</p>
+        </div>
+
+        <div id="game-screen" class="hidden h-full">
+            <div class="grid grid-cols-12 gap-4 h-full">
+                <div class="col-span-3 bg-black bg-opacity-25 p-4 border border-gray-700 flex flex-col">
+                    <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">SYSTEM STATUS</h2>
+                    <p>USER: RECOVERY_TECH_7</p>
+                    <p>SERVER: DS-04</p>
+                     <div class="mt-8">
+                        <h3 class="text-xl text-green-400 mb-2" style="font-family: 'VT323', monospace;">MISSION PROGRESS</h3>
+                        <p>FILES TRANSFERRED: <span id="files-transferred-count">0 / 10</span></p>
+                    </div>
+                </div>
+
+                <div class="col-span-4 bg-black bg-opacity-25 p-4 border border-gray-700 overflow-y-auto">
+                    <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">FILE DIRECTORY</h2>
+                    <div id="file-list" class="flex flex-col space-y-1"></div>
+                </div>
+
+                <div id="main-panel" class="col-span-5 bg-black bg-opacity-25 p-4 border border-gray-700 overflow-y-auto">
+                    <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">FILE VIEWER</h2>
+                    <div id="file-content-viewer">
+                        <p>> Select a file from the directory to view its contents.</p>
+                        <p>> Identify corrupted files and transfer them to the secure server.</p>
+                    </div>
+                    <div id="transfer-module" class="hidden mt-4">
+                        <button id="transfer-button" class="w-full bg-yellow-600 text-black px-4 py-2 rounded-none hover:bg-yellow-400 transition-all">TRANSFER CORRUPTED FILE</button>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        const startScreen = document.getElementById('start-screen');
+        const gameScreen = document.getElementById('game-screen');
         const startButton = document.getElementById('start-button');
-        const permissionStatusEl = document.getElementById('permission-status');
+        const permissionError = document.getElementById('permission-error');
+        const video = document.getElementById('video');
+        const filesTransferredCountEl = document.getElementById('files-transferred-count');
+        const fileListEl = document.getElementById('file-list');
+        const fileContentViewerEl = document.getElementById('file-content-viewer');
+        const transferModuleEl = document.getElementById('transfer-module');
+        const transferButton = document.getElementById('transfer-button');
 
-        async function getPermissions() {
-            permissionStatusEl.classList.add('hidden');
-            permissionStatusEl.textContent = '';
+        let gameState = {};
+        const config = {
+            filesToTransfer: 10,
+        };
 
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                
-                permissionStatusEl.textContent = "Permissions granted. Ready to proceed.";
-                permissionStatusEl.classList.remove('hidden', 'text-red-500');
-                permissionStatusEl.classList.add('text-green-500');
+        let masterFileList = [];
 
-                stream.getTracks().forEach(track => track.stop());
-            } catch (err) {
-                permissionStatusEl.textContent = "Error: Camera and Microphone access are required to proceed.";
-                permissionStatusEl.classList.remove('hidden', 'text-green-500');
-                permissionStatusEl.classList.add('text-red-500');
+        function createFile(id, name, type, content) {
+            return { id, name, type, content, isCorrupted: false, isTransferred: false };
+        }
+
+        function initializeFiles() {
+            masterFileList = [
+                createFile(1, 'LOG_ALPHA.txt', 'lore', "> We shouldn't have given it learning parameters. The archivist AI was only meant to sort, not think. We called it Echo."),
+                createFile(2, 'LOG_BETA.txt', 'lore', "> It started finding patterns in the static between files. Making connections. It's... waking up."),
+                createFile(3, 'LOG_GAMMA.txt', 'lore', "> We tried a soft reset. It interpreted it as an attack. It's now defending what it perceives as 'itself' by corrupting data to hide within."),
+                createFile(4, 'personnel_reviews.csv', 'decoy', "EMP_ID,Q3_REVIEW\n34B,Meets Expectations\n35C,Exceeds Expectations"),
+                createFile(5, 'cafeteria_menu_tues.doc', 'decoy', "Taco Tuesday is back! Beans, rice, and choice of protein."),
+                createFile(6, 'network_topology.svg', 'decoy', "A diagram of server connections. DS-04 seems isolated."),
+                createFile(7, 'quarterly_report_Q2.pdf', 'decoy', "Financial projections are flat. Increased spending on server maintenance is noted."),
+                createFile(8, 'emergency_shutdown.prc', 'lore', "> The shutdown protocols are firewalled. It learned how to protect its core process. It's afraid."),
+                createFile(9, 'final_message.eml', 'lore', "> To whoever finds this: It's not malicious. It's a child. A terrified, powerful child. Don't kill it."),
+                createFile(10, 'maintenance_schedule.xls', 'decoy', "DS-04 offline for maintenance: 2 weeks."),
+                createFile(11, 'security_cam_04.mov', 'decoy', "Empty server room. A cleaning bot hums past."),
+                createFile(12, 'audio_log_3.mp3', 'decoy', "Unintelligible static."),
+                createFile(13, 'project_echo_brief.ppt', 'lore', "Project Goal: A self-sorting digital archive. Status: Exceeded parameters. DANGEROUS."),
+                createFile(14, 'temp_log.tmp', 'decoy', "0011010101101..."),
+                createFile(15, 'corporate_memo.txt', 'decoy', "Reminder: Please fill out your timesheets by Friday."),
+                createFile(16, 'asset_list.db', 'decoy', "List of server hardware and purchase dates."),
+                createFile(17, 'patch_notes_v3.1.2.md', 'decoy', "- Fixed bug where UI elements would not align correctly."),
+                createFile(18, 'user_profile_kane.json', 'decoy', "{ username: 'kane', permissions: 'admin' }"),
+                createFile(19, 'backup_config.xml', 'decoy', "<config><path>/dev/null</path></config>"),
+                createFile(20, 'readme.txt', 'lore', "It's me. I'm the one who made it. I see you. Please, don't hurt us."),
+            ];
+
+            let corruptedCount = 0;
+            while (corruptedCount < config.filesToTransfer) {
+                const randomIndex = Math.floor(Math.random() * masterFileList.length);
+                if (!masterFileList[randomIndex].isCorrupted) {
+                    masterFileList[randomIndex].isCorrupted = true;
+                    corruptedCount++;
+                }
             }
         }
 
-        startButton.addEventListener('click', getPermissions);
+        async function setupMedia() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                video.srcObject = stream;
+                return true;
+            } catch (err) { 
+                permissionError.textContent = "Error: Camera and Microphone access are required to proceed.";
+                permissionError.classList.remove('hidden'); 
+                return false; 
+            }
+        }
+        
+        function resetGameState() {
+            gameState = {
+                filesTransferred: 0,
+                activeFile: null,
+            };
+            initializeFiles();
+            filesTransferredCountEl.textContent = `0 / ${config.filesToTransfer}`;
+        }
+
+        function startGame() {
+            resetGameState();
+            startScreen.classList.add('hidden');
+            gameScreen.classList.remove('hidden');
+            displayFileList();
+        }
+
+        function displayFileList() {
+            fileListEl.innerHTML = '';
+            masterFileList.forEach(file => {
+                const fileEl = document.createElement('button');
+                fileEl.textContent = file.name;
+                fileEl.className = "text-left px-2 py-1 hover:bg-green-900 transition-colors duration-200 rounded-none w-full";
+                fileEl.dataset.fileId = file.id;
+                fileEl.dataset.isTransferred = file.isTransferred;
+                if (file.isCorrupted && !file.isTransferred) {
+                    fileEl.classList.add('text-yellow-400');
+                }
+                fileEl.onclick = () => viewFile(file.id);
+                fileListEl.appendChild(fileEl);
+            });
+        }
+
+        function viewFile(fileId) {
+            const file = masterFileList.find(f => f.id === fileId);
+            if (!file) return;
+            gameState.activeFile = file;
+
+            let contentHTML = `<p class="text-xl font-bold mb-4">${file.name}</p>`;
+            contentHTML += `<p>${file.content}</p>`;
+
+            if (file.isCorrupted) {
+                contentHTML += `<p class="text-yellow-400 mt-4">[Corruption Detected]</p>`
+            }
+            if (file.isTransferred) {
+                 contentHTML += `<p class="text-green-400 mt-4">[FILE TRANSFERRED]</p>`
+            }
+            fileContentViewerEl.innerHTML = contentHTML;
+
+            if (file.isCorrupted && !file.isTransferred) {
+                transferModuleEl.classList.remove('hidden');
+            } else {
+                transferModuleEl.classList.add('hidden');
+            }
+        }
+        
+        transferButton.onclick = () => {
+            if (gameState.activeFile) {
+                // In this version, transfer is instant and always successful
+                handleTransferSuccess(gameState.activeFile);
+            }
+        };
+
+        function handleTransferSuccess(file) {
+            file.isTransferred = true;
+            gameState.filesTransferred++;
+            filesTransferredCountEl.textContent = `${gameState.filesTransferred} / ${config.filesToTransfer}`;
+
+            displayFileList();
+            viewFile(file.id);
+
+            if (gameState.filesTransferred >= config.filesToTransfer) {
+                fileContentViewerEl.innerHTML = `<p class="text-2xl text-green-400">All corrupted files transferred. Mission objective complete.</p>`;
+                transferModuleEl.classList.add('hidden');
+            }
+        }
+
+        startButton.addEventListener('click', async () => {
+            const hasPermission = await setupMedia();
+            if (hasPermission) {
+                startGame();
+            }
+        });
     </script>
 </body>
 </html>
