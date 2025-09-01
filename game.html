@@ -115,11 +115,20 @@
 
         //noise too sensitive, movement not enough
         const config = {
-            noiseThreshold: 1,//0.05, 
-            movementThreshold: 0.00001,   
-            transferTime: 10000,    
+            noiseMediumThreshold: 0.005,
+            noiseHighThreshold: 0.05,
+            movementMediumThreshold: 0.5,
+            movementHighThreshold: 1,
+            pixelChangeThreshold: 10,
+            transferTime: 10000,
             filesToTransfer: 10,
             maxStrikes: 3
+            // noiseThreshold: 1,//0.05, 
+            // movementThreshold: 1,
+            // pixelChangeThreshold: 30,   
+            // transferTime: 10000,    
+            // filesToTransfer: 10,
+            // maxStrikes: 3
         };
         
         let gameState = {};
@@ -198,27 +207,53 @@
             let sum = dataArray.reduce((acc, val) => acc + val * val, 0);
             const rms = Math.sqrt(sum / dataArray.length) / 128;
             gameState.noiseLevel = rms;
-            const isHigh = rms > config.noiseThreshold;
-            noiseStatusEl.textContent = isHigh ? 'HIGH' : 'LOW';
-            noiseStatusEl.classList.toggle('text-red-500', isHigh);
-            noiseStatusEl.classList.toggle('text-green-400', !isHigh);
+
+            noiseStatusEl.classList.remove('text-green-400', 'text-yellow-400', 'text-red-500');
+
+            if (rms > config.noiseHighThreshold) {
+                noiseStatusEl.textContent = 'HIGH';
+                noiseStatusEl.classList.add('text-red-500');
+            } else if (rms > config.noiseMediumThreshold) {
+                noiseStatusEl.textContent = 'MEDIUM';
+                noiseStatusEl.classList.add('text-yellow-400');
+            } else {
+                noiseStatusEl.textContent = 'LOW';
+                noiseStatusEl.classList.add('text-green-400');
+            }
         }
 
         function analyzeMovement() {
             if (!canvasContext || !video.videoWidth) return;
             canvasContext.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
             const currentFrame = canvasContext.getImageData(0, 0, video.videoWidth, video.videoHeight).data;
+
             if (lastFrame) {
-                let diff = 0;
+                const totalPixels = currentFrame.length / 4;
+                let changedPixels = 0;
+
                 for (let i = 0; i < currentFrame.length; i += 4) {
-                    diff += Math.abs(currentFrame[i] - lastFrame[i]) + Math.abs(currentFrame[i+1] - lastFrame[i+1]) + Math.abs(currentFrame[i+2] - lastFrame[i+2]);
+                    const diff = Math.abs(currentFrame[i] - lastFrame[i]) + Math.abs(currentFrame[i+1] - lastFrame[i+1]) + Math.abs(currentFrame[i+2] - lastFrame[i+2]);
+                    if (diff > config.pixelChangeThreshold) {
+                        changedPixels++;
+                    }
                 }
-                gameState.movementLevel = diff / (currentFrame.length * 0.75);
-                const isHigh = gameState.movementLevel > config.movementThreshold;
-                movementStatusEl.textContent = isHigh ? 'HIGH' : 'LOW';
-                movementStatusEl.classList.toggle('text-red-500', isHigh);
-                movementStatusEl.classList.toggle('text-green-400', !isHigh);
+
+                gameState.movementLevel = (changedPixels / totalPixels) * 100;
+                
+                movementStatusEl.classList.remove('text-green-400', 'text-yellow-400', 'text-red-500');
+
+                if (gameState.movementLevel > config.movementHighThreshold) {
+                    movementStatusEl.textContent = 'HIGH';
+                    movementStatusEl.classList.add('text-red-500');
+                } else if (gameState.movementLevel > config.movementMediumThreshold) {
+                    movementStatusEl.textContent = 'MEDIUM';
+                    movementStatusEl.classList.add('text-yellow-400');
+                } else {
+                    movementStatusEl.textContent = 'LOW';
+                    movementStatusEl.classList.add('text-green-400');
+                }
             }
+
             lastFrame = new Uint8ClampedArray(currentFrame);
         }
 
@@ -250,8 +285,8 @@
             analyzeMovement();
 
             if (gameState.isWatching) {
-                const isNoisy = gameState.noiseLevel > config.noiseThreshold;
-                const isMoving = gameState.movementLevel > config.movementThreshold;
+                const isNoisy = gameState.noiseLevel > config.noiseHighThreshold;
+                const isMoving = gameState.movementLevel > config.movementHighThreshold;
                 if (isNoisy || isMoving) {
                     handleTransferFailure(gameState.activeFile);
                 }
