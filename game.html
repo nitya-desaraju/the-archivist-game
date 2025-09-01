@@ -71,7 +71,7 @@
                 </div>
                 <div class="col-span-4 bg-black bg-opacity-25 p-4 border border-gray-700 flex flex-col">
                     <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">FILE DIRECTORY</h2>
-                    <div id="file-list" class="flex flex-col space-y-1 flex-1 overflow-y-auto"></div>
+                    <div id="file-list" class="flex flex-col space-y-1 flex-1 overflow-y-scroll"></div>
                 </div>
                 <div id="main-panel" class="col-span-5 bg-black bg-opacity-25 p-4 border border-gray-700 overflow-y-auto flex flex-col">
                     <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">FILE VIEWER</h2>
@@ -90,7 +90,6 @@
     </div>
 
     <script>
-        // --- DOM Elements ---
         const startScreen = document.getElementById('start-screen');
         const gameScreen = document.getElementById('game-screen');
         const startButton = document.getElementById('start-button');
@@ -109,8 +108,8 @@
 
         //noise too sensitive, movement not enough
         const config = {
-            noiseThreshold: 0.02, 
-            movementThreshold: 5,   
+            noiseThreshold: 0.05, 
+            movementThreshold: 0.00001,   
             transferTime: 10000,    
             filesToTransfer: 10,
             maxStrikes: 3
@@ -240,9 +239,10 @@
         }
 
         function gameLoop() {
+            analyzeNoise();
+            analyzeMovement();
+
             if (gameState.isWatching) {
-                analyzeNoise();
-                analyzeMovement();
                 const isNoisy = gameState.noiseLevel > config.noiseThreshold;
                 const isMoving = gameState.movementLevel > config.movementThreshold;
                 if (isNoisy || isMoving) {
