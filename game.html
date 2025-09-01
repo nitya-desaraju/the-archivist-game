@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -43,6 +43,17 @@
             pointer-events: none; z-index: 1000;
         }
         [data-is-transferred="true"] { text-decoration: line-through; color: #555; }
+
+        /* make cam appear in corner to test video input */
+        /* #debug-canvas {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 160px;
+            height: 120px;
+            border: 2px solid blue;
+            z-index: 9999;
+        } */
     </style>
 </head>
 
@@ -113,13 +124,12 @@
         const transferProgressBar = document.getElementById('transfer-bar');
         const transferProgressText = document.getElementById('transfer-progress');
 
-        //noise too sensitive, movement not enough
+        //adjusted thresholds
         const config = {
-            noiseMediumThreshold: 0.005,
-            noiseHighThreshold: 0.05,
-            movementMediumThreshold: 0.5,
-            movementHighThreshold: 1,
-            pixelChangeThreshold: 10,
+            noiseMediumThreshold: 0.05,
+            noiseHighThreshold: 0.5,
+            movementMediumThreshold: 1500000,
+            movementHighThreshold: 2000000,
             transferTime: 10000,
             filesToTransfer: 10,
             maxStrikes: 3
@@ -175,13 +185,24 @@
             }
         }
 
+        //fixing video not appearing
         async function setupMedia() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
                 video.srcObject = stream;
-                await new Promise(resolve => video.onloadedmetadata = resolve);
+                video.play();
+
+                await Promise.all([
+                    new Promise(resolve => video.onloadedmetadata = resolve),
+                    new Promise(resolve => video.oncanplay = resolve)
+                ]);
 
                 const canvas = document.createElement('canvas');
+
+                //use to make cam appear in corner to test video input
+                // canvas.id = 'debug-canvas';
+                // document.body.appendChild(canvas);
+
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 canvasContext = canvas.getContext('2d', { willReadFrequently: true });
@@ -228,18 +249,14 @@
             const currentFrame = canvasContext.getImageData(0, 0, video.videoWidth, video.videoHeight).data;
 
             if (lastFrame) {
-                const totalPixels = currentFrame.length / 4;
-                let changedPixels = 0;
-
+                let totalDifference = 0;
                 for (let i = 0; i < currentFrame.length; i += 4) {
-                    const diff = Math.abs(currentFrame[i] - lastFrame[i]) + Math.abs(currentFrame[i+1] - lastFrame[i+1]) + Math.abs(currentFrame[i+2] - lastFrame[i+2]);
-                    if (diff > config.pixelChangeThreshold) {
-                        changedPixels++;
-                    }
+                    totalDifference += Math.abs(currentFrame[i] - lastFrame[i]);
+                    totalDifference += Math.abs(currentFrame[i + 1] - lastFrame[i + 1]);
+                    totalDifference += Math.abs(currentFrame[i + 2] - lastFrame[i + 2]);
                 }
+                gameState.movementLevel = totalDifference;
 
-                gameState.movementLevel = (changedPixels / totalPixels) * 100;
-                
                 movementStatusEl.classList.remove('text-green-400', 'text-yellow-400', 'text-red-500');
 
                 if (gameState.movementLevel > config.movementHighThreshold) {
