@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html> hhdhdh
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -127,12 +127,14 @@
         //adjusted thresholds
         const config = {
             noiseMediumThreshold: 0.05,
-            noiseHighThreshold: 0.5,
-            movementMediumThreshold: 1500000,
-            movementHighThreshold: 2000000,
+            noiseHighThreshold: 10, //0.5,
+            movementMediumThreshold: 900000, //1500000
+            movementHighThreshold: 1000000, //2000000
             transferTime: 10000,
-            filesToTransfer: 10,
-            maxStrikes: 3
+            filesToTransfer: 1,
+            maxStrikes: 3,
+            smoothingFactor: 0.05
+
             // noiseThreshold: 1,//0.05, 
             // movementThreshold: 1,
             // pixelChangeThreshold: 30,   
@@ -255,8 +257,8 @@
                     totalDifference += Math.abs(currentFrame[i + 1] - lastFrame[i + 1]);
                     totalDifference += Math.abs(currentFrame[i + 2] - lastFrame[i + 2]);
                 }
-                gameState.movementLevel = totalDifference;
-
+                
+                gameState.movementLevel = (totalDifference * config.smoothingFactor) + (gameState.movementLevel * (1 - config.smoothingFactor));
                 movementStatusEl.classList.remove('text-green-400', 'text-yellow-400', 'text-red-500');
 
                 if (gameState.movementLevel > config.movementHighThreshold) {
