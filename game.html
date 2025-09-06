@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device_width, initial-scale=1.0">
-    <title>Archive Game</title>
+    <title>The Archivist Game</title>
     <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=VT323&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script> <style>
         body {
@@ -61,10 +61,19 @@
     <div class="scanline"></div>
     <div id="game-container" class="w-full max-w-6xl h-full relative crt-effect">
         <video id="video" playsinline autoplay muted></video>
+        <div id="how-to-play-modal" class="hidden absolute inset-0 bg-black bg-opacity-90 flex justify-center items-center z-50 p-4">
+            <div class="bg-black border border-gray-700 p-8 max-w-lg text-center crt-effect">
+                <h2 class="text-3xl text-yellow-400 mb-6" style="font-family: 'VT323', monospace;">INSTRUCTIONS</h2>
+                <p class="mb-4">Your mission: Complete the puzzles for each file to decrypt and recover the data and transfer it to the new data server.</p>
+                <p class="mb-8">But beware. The AI archivist has gone <span class="text-red-700 font-bold">rogue</span>.</p>
+                <button id="close-how-to-play-button" class="bg-gray-800 text-green-400 border border-green-400 px-6 py-2 rounded-none hover:bg-green-400 hover:text-gray-900 transition-all">CLOSE</button>
+            </div>
+        </div>
         <div id="start-screen" class="text-center flex flex-col justify-center items-center h-full">
-            <h1 class="text-5xl mb-4 text-red-700" style="font-family: 'VT323', monospace;">ARCHIVE RECOVERY</h1>
+            <button id="how-to-play-button" class="absolute top-1 right-1 bg-gray-800 text-yellow-400 border border-yellow-400 px-4 py-1 rounded-none hover:bg-yellow-400 hover:text-gray-900 transition-all text-sm">How to Play</button>
+            <h1 class="text-5xl mb-4 text-red-700" style="font-family: 'VT323', monospace;">The Archivist</h1>
             <p class="mb-6">Server DS-04 is experiencing critical data corruption.</p>
-            <p class="mb-8">Your mission: Transfer all 10 corrupted files to the secure server before decommissioning DS-04.</p>
+            <p class="mb-8">Your mission: Transfer all 20 corrupted files to the secure server before decommissioning DS-04.</p>
             <p class="mb-8 text-yellow-400">Warning: An AI anomaly is protecting the corrupted data. Avoid detection.</p>
             <button id="start-button" class="bg-gray-800 text-green-400 border border-green-400 px-6 py-2 rounded-none hover:bg-green-400 hover:text-gray-900 transition-all">Initialize Connection</button>
             <p id="permission-error" class="text-red-500 mt-4 hidden">Error: Camera and Microphone access are required.</p>
@@ -123,6 +132,9 @@
         const transferProgressModuleEl = document.getElementById('transfer-progress-module');
         const transferProgressBar = document.getElementById('transfer-bar');
         const transferProgressText = document.getElementById('transfer-progress');
+        const howToPlayButton = document.getElementById('how-to-play-button');
+        const howToPlayModal = document.getElementById('how-to-play-modal');
+        const closeHowToPlayButton = document.getElementById('close-how-to-play-button');
 
         //adjusted thresholds
         const config = {
@@ -465,6 +477,14 @@
         startButton.addEventListener('click', async () => {
             const hasPermission = await setupMedia();
             if (hasPermission) startGame();
+        });
+
+        howToPlayButton.addEventListener('click', () => {
+            howToPlayModal.classList.remove('hidden');
+        });
+
+        closeHowToPlayButton.addEventListener('click', () => {
+            howToPlayModal.classList.add('hidden');
         });
     </script>
 </body>
