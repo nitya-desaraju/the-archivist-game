@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en"> 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device_width, initial-scale=1.0">
@@ -169,7 +169,7 @@
         //puzzles defs
         const numberGridPuzzle = {
             name: 'Number Sequence',
-            duration: 15000,
+            duration: 10000,
             instructionText: 'Click the numbers in numerical order.',
             init: function(file) {
                 const puzzleArea = document.getElementById('puzzle-area');
@@ -203,9 +203,83 @@
             }
         };
 
+        const wireAlignmentPuzzle = {
+            name: 'Wire Alignment',
+            duration: 20000,
+            instructionText: 'Click to rotate the middle segments and align all five wires.',
+            init: function(file) {
+                const puzzleArea = document.getElementById('puzzle-area');
+                puzzleArea.innerHTML = '';
+                puzzleArea.style.display = 'flex';
+                puzzleArea.style.justifyContent = 'space-around';
+                puzzleArea.style.alignItems = 'center';
+                puzzleArea.style.width = '100%';
+                puzzleArea.style.maxWidth = 'none';
+
+                let alignedStatus = [false, false, false, false, false];
+                const rotationIncrement = 20;
+
+                for (let i = 0; i < 5; i++) {
+                    const wireContainer = document.createElement('div');
+                    wireContainer.style.display = 'flex';
+                    wireContainer.style.flexDirection = 'column';
+                    wireContainer.style.alignItems = 'center';
+                    
+                    const topWire = document.createElement('div');
+                    const middleWire = document.createElement('div');
+                    const bottomWire = document.createElement('div');
+
+                    const wireParts = [topWire, middleWire, bottomWire];
+                    wireParts.forEach(part => {
+                        part.style.width = '6px';
+                        part.style.backgroundColor = '#6b7280';
+                        part.style.borderRadius = '2px';
+                    });
+
+                    topWire.style.height = '40px';
+                    middleWire.style.height = '50px';
+                    bottomWire.style.height = '40px';
+                    
+                    const steps = 360 / rotationIncrement;
+                    const randomStep = Math.floor(Math.random() * steps);
+                    const randomRotation = randomStep * rotationIncrement;
+                    
+                    middleWire.style.transform = `rotate(${randomRotation}deg)`;
+                    middleWire.dataset.rotation = randomRotation;
+                    middleWire.style.cursor = 'pointer';
+
+                    middleWire.onclick = (event) => {
+                        const target = event.target;
+                        let currentRotation = parseFloat(target.dataset.rotation);
+                        let newRotation = (currentRotation + rotationIncrement) % 360;
+                        
+                        target.style.transform = `rotate(${newRotation}deg)`;
+                        target.dataset.rotation = newRotation;
+                        
+                        if (newRotation === 0 || newRotation === 180) {
+                            [topWire, middleWire, bottomWire].forEach(part => part.style.backgroundColor = '#38bdf8');
+                            target.onclick = null;
+                            target.style.cursor = 'default';
+                            alignedStatus[i] = true;
+
+                            if (alignedStatus.every(status => status === true)) {
+                                handlePuzzleSuccess(file);
+                            }
+                        }
+                    };
+
+                    wireContainer.appendChild(topWire);
+                    wireContainer.appendChild(middleWire);
+                    wireContainer.appendChild(bottomWire);
+                    puzzleArea.appendChild(wireContainer);
+                }
+            }
+        };
+
         //puzzles
         const puzzleList = [
-            numberGridPuzzle
+            numberGridPuzzle,
+            wireAlignmentPuzzle
         ];
 
         function handlePuzzleSuccess(file) {
@@ -237,7 +311,7 @@
             smoothingFactor: 0.05,
             watchedFiles: 10
 
-            // noiseThreshold: 1,//0.05,
+            // noiseThreshold: 1,//0.05, 
             // movementThreshold: 1,
             // pixelChangeThreshold: 30,
             // transferTime: 10000,
