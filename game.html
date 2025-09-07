@@ -1,11 +1,12 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device_width, initial-scale=1.0">
     <title>The Archivist Game</title>
     <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=VT323&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script> <style>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
         html, body {
             height: 100%;
             margin: 0;
@@ -48,6 +49,20 @@
             pointer-events: none; z-index: 1000;
         }
         [data-is-transferred="true"] { color: #e0e0e0; }
+        
+        #file-list::-webkit-scrollbar {
+            width: 8px;
+        }
+        #file-list::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        #file-list::-webkit-scrollbar-thumb {
+            background: #6b7280;
+            border-radius: 0;
+        }
+        #file-list::-webkit-scrollbar-thumb:hover {
+            background: #9ca3af;
+        }
 
         /* make cam appear in corner to test video input */
         /* #debug-canvas {
@@ -64,7 +79,7 @@
 
 <body class="bg-black text-gray-300">
     <div class="scanline"></div>
-    <div id="game-container" class="w-full max-w-6xl h-full relative crt-effect p-4 mx-auto flex flex-col justify-center">
+    <div id="game-container" class="w-full h-full relative crt-effect p-2 flex flex-col">
         <video id="video" playsinline autoplay muted></video>
         <button id="how-to-play-button" class="fixed top-4 right-4 bg-gray-800 text-yellow-400 border border-yellow-400 px-4 py-1 rounded-none hover:bg-yellow-400 hover:text-gray-900 transition-all text-sm z-40">How to Play</button>
         <div id="how-to-play-modal" class="hidden absolute inset-0 bg-black bg-opacity-90 flex justify-center items-center z-50 p-4">
@@ -84,9 +99,9 @@
             <p id="permission-error" class="text-red-500 mt-4 hidden">Error: Camera and Microphone access are required.</p>
         </div>
 
-        <div id="game-screen" class="hidden h-full">
-            <div class="grid grid-cols-12 gap-4 h-full">
-                <div class="col-span-3 bg-black bg-opacity-25 p-4 border border-gray-700 flex flex-col">
+        <div id="game-screen" class="hidden h-full flex-1">
+            <div class="grid grid-cols-12 gap-2 h-[calc(100%-100px)]">
+                <div class="col-span-3 bg-black bg-opacity-25 p-4 border border-gray-700 flex flex-col h-[calc(100vh-30px)]">
                     <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">SYSTEM STATUS</h2>
                     <p>USER: RECOVERY_TECH_7</p>
                     <p>SERVER: DS-04</p>
@@ -97,15 +112,15 @@
                     </div>
                      <div class="mt-8">
                         <h3 class="text-xl text-green-400 mb-2" style="font-family: 'VT323', monospace;">MISSION PROGRESS</h3>
-                        <p>FILES TRANSFERRED: <span id="files-transferred-count">0 / 10</span></p>
+                        <p>FILES TRANSFERRED: <span id="files-transferred-count">0 / 20</span></p>
                         <p>DETECTION STRIKES: <span id="strikes-count">0 / 3</span></p>
                     </div>
                 </div>
-                <div class="col-span-4 bg-black bg-opacity-25 p-4 border border-gray-700 flex flex-col">
+                <div class="col-span-4 bg-black bg-opacity-25 p-4 border border-gray-700 flex flex-col h-[calc(100vh-30px)]">
                     <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">FILE DIRECTORY</h2>
                     <div id="file-list" class="flex flex-col space-y-1 flex-1 overflow-y-scroll"></div>
                 </div>
-                <div id="main-panel" class="col-span-5 bg-black bg-opacity-25 p-4 border border-gray-700 overflow-y-auto flex flex-col">
+                <div id="main-panel" class="col-span-5 bg-black bg-opacity-25 p-4 border border-gray-700 overflow-y-auto flex flex-col h-[calc(100vh-30px)]">
                     <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">FILE VIEWER</h2>
                     <div id="transfer-interface" class="hidden">
                         <div id="puzzle-view" class="text-center">
@@ -118,7 +133,6 @@
                     </div>
                     <div id="file-content-viewer" class="flex-grow">
                         <p>> Select a file from the directory to view its contents.</p>
-                        <p>> Identify corrupted files and transfer them to the secure server.</p>
                     </div>
                 </div>
             </div>
@@ -223,10 +237,10 @@
             smoothingFactor: 0.05,
             watchedFiles: 10
 
-            // noiseThreshold: 1,//0.05, 
+            // noiseThreshold: 1,//0.05,
             // movementThreshold: 1,
-            // pixelChangeThreshold: 30,   
-            // transferTime: 10000,    
+            // pixelChangeThreshold: 30,
+            // transferTime: 10000,
             // filesToTransfer: 10,
             // maxStrikes: 3
         };
@@ -410,7 +424,10 @@
                 fileEl.className = "text-left px-2 py-1 hover:bg-green-900 transition-colors duration-200 rounded-none w-full";
                 fileEl.dataset.fileId = file.id;
 
-                if (!file.isTransferred) {
+                if (file.isTransferred) {
+                    fileEl.classList.add('text-gray-500');
+                    fileEl.classList.remove('text-yellow-400');
+                } else {
                     fileEl.classList.add('text-yellow-400');
                 }
 
@@ -420,6 +437,13 @@
         }
 
         function viewFile(fileId, isInitial = false, failureType = null) {
+            document.querySelectorAll('#file-list button').forEach(btn => btn.classList.remove('bg-green-900'));
+            if(fileId) {
+                const selectedButton = document.querySelector(`#file-list button[data-file-id='${fileId}']`);
+                if(selectedButton) selectedButton.classList.add('bg-green-900');
+            }
+
+
             if (isInitial) {
                 fileContentViewerEl.innerHTML = `<p>> Select a file from the directory to view its contents.</p>`;
                 return;
@@ -434,7 +458,7 @@
             }
             gameState.activeFile = file;
 
-            let contentHTML = `<p class="text-xl font-bold mb-4">${file.name}</p><p>${file.content}</p>`;
+            let contentHTML = `<p class="text-xl font-bold mb-4">${file.name}</p><pre class="whitespace-pre-wrap">${file.content}</pre>`;
 
             if (file.isTransferred) {
                 contentHTML += `<p class="text-green-400 mt-4">[FILE TRANSFERRED]</p>`
