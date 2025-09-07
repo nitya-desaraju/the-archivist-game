@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en"> 
 <head>
     <meta charset="UTF-8">
@@ -101,7 +101,7 @@
 
         <div id="game-screen" class="hidden h-full flex-1">
             <div class="grid grid-cols-12 gap-2 h-[calc(100%-100px)]">
-                <div class="col-span-3 bg-black bg-opacity-25 p-4 border border-gray-700 flex flex-col h-[calc(100vh-30px)]">
+                <div class="col-span-3 bg-black bg-opacity-25 p-4 border border-gray-700 flex flex-col h-[calc(100vh-20px)]">
                     <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">SYSTEM STATUS</h2>
                     <p>USER: RECOVERY_TECH_7</p>
                     <p>SERVER: DS-04</p>
@@ -116,11 +116,11 @@
                         <p>DETECTION STRIKES: <span id="strikes-count">0 / 3</span></p>
                     </div>
                 </div>
-                <div class="col-span-4 bg-black bg-opacity-25 p-4 border border-gray-700 flex flex-col h-[calc(100vh-30px)]">
+                <div class="col-span-4 bg-black bg-opacity-25 p-4 border border-gray-700 flex flex-col h-[calc(100vh-20px)]">
                     <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">FILE DIRECTORY</h2>
                     <div id="file-list" class="flex flex-col space-y-1 flex-1 overflow-y-scroll"></div>
                 </div>
-                <div id="main-panel" class="col-span-5 bg-black bg-opacity-25 p-4 border border-gray-700 overflow-y-auto flex flex-col h-[calc(100vh-30px)]">
+                <div id="main-panel" class="col-span-5 bg-black bg-opacity-25 p-4 border border-gray-700 overflow-y-auto flex flex-col h-[calc(100vh-20px)]">
                     <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">FILE VIEWER</h2>
                     <div id="transfer-interface" class="hidden">
                         <div id="puzzle-view" class="text-center">
@@ -181,6 +181,7 @@
 
                 let nextExpectedNumber = 1;
                 const numbers = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+                const buttons = [];
 
                 numbers.forEach(num => {
                     const button = document.createElement('button');
@@ -195,9 +196,12 @@
                                 handlePuzzleSuccess(file);
                             }
                         } else {
+                            button.style.backgroundColor = '#991b1b';
+                            buttons.forEach(btn => btn.disabled = true);
                             handlePuzzleFailure(file, 'Incorrect Sequence');
                         }
                     };
+                    buttons.push(button);
                     puzzleArea.appendChild(button);
                 });
             }
@@ -205,7 +209,7 @@
 
         const wireAlignmentPuzzle = {
             name: 'Wire Alignment',
-            duration: 20000,
+            duration: 15000,
             instructionText: 'Click to rotate the middle segments and align all five wires.',
             init: function(file) {
                 const puzzleArea = document.getElementById('puzzle-area');
@@ -240,9 +244,12 @@
                     middleWire.style.height = '50px';
                     bottomWire.style.height = '40px';
                     
-                    const steps = 360 / rotationIncrement;
-                    const randomStep = Math.floor(Math.random() * steps);
-                    const randomRotation = randomStep * rotationIncrement;
+                    let randomRotation;
+                    do {
+                        const steps = 360 / rotationIncrement;
+                        const randomStep = Math.floor(Math.random() * steps);
+                        randomRotation = randomStep * rotationIncrement;
+                    } while (randomRotation === 0 || randomRotation === 180);
                     
                     middleWire.style.transform = `rotate(${randomRotation}deg)`;
                     middleWire.dataset.rotation = randomRotation;
@@ -285,26 +292,32 @@
         function handlePuzzleSuccess(file) {
             clearTimeout(puzzleTimer);
             clearInterval(puzzleTimerInterval);
-            document.getElementById('puzzle-view').style.display = 'none';
-            document.getElementById('puzzle-instructions').classList.add('hidden');
-            handleTransferSuccess(file);
+            
+            setTimeout(() => {
+                document.getElementById('puzzle-view').style.display = 'none';
+                document.getElementById('puzzle-instructions').classList.add('hidden');
+                handleTransferSuccess(file);
+            }, 500);
         }
 
         function handlePuzzleFailure(file, reason) {
             console.log(`Puzzle failed: ${reason}`);
             clearTimeout(puzzleTimer);
             clearInterval(puzzleTimerInterval);
-            document.getElementById('puzzle-view').style.display = 'none';
-            document.getElementById('puzzle-instructions').classList.add('hidden');
-            handleTransferFailure(file);
+
+            setTimeout(() => {
+                document.getElementById('puzzle-view').style.display = 'none';
+                document.getElementById('puzzle-instructions').classList.add('hidden');
+                handleTransferFailure(file);
+            }, 500);
         }
 
         //adjusted thresholds
         const config = {
             noiseMediumThreshold: 0.05,
             noiseHighThreshold: 10, //0.5,
-            movementMediumThreshold: 900000, //1500000
-            movementHighThreshold: 1000000, //2000000
+            movementMediumThreshold: 100000, //1500000
+            movementHighThreshold: 1700000, //2000000
             transferTime: 10000,
             filesToTransfer: 20,
             maxStrikes: 3,
@@ -324,7 +337,7 @@
         let audioContext, analyser, dataArray, lastFrame, canvasContext;
 
         function createFile(id, name, type, content) {
-            return { id, name, type, content, isWatched: false, isTransferred: false };
+            return { id, name, type, content, isWatched: false, isTransferred: false, assignedPuzzle: null };
         }
 
         //random generated stuff, replace with actual files
@@ -351,6 +364,11 @@
                 createFile(19, 'backup_config.xml', 'decoy', "<config><path>/dev/null</path></config>"),
                 createFile(20, 'readme.txt', 'lore', "It's me. I'm the one who made it. I see you. Please, don't hurt us."),
             ];
+
+            masterFileList.forEach(file => {
+                const randomPuzzle = puzzleList[Math.floor(Math.random() * puzzleList.length)];
+                file.assignedPuzzle = randomPuzzle;
+            });
 
             let watchedCount = 0;
             while (watchedCount < config.watchedFiles) {
@@ -484,7 +502,12 @@
                 const isNoisy = gameState.noiseLevel > config.noiseHighThreshold;
                 const isMoving = gameState.movementLevel > config.movementHighThreshold;
                 if (isNoisy || isMoving) {
-                    handlePuzzleFailure(gameState.activeFile, 'AI Activity Detected');
+                    console.log('Failure: AI Activity Detected');
+                    clearTimeout(puzzleTimer);
+                    clearInterval(puzzleTimerInterval);
+                    document.getElementById('puzzle-view').style.display = 'none';
+                    document.getElementById('puzzle-instructions').classList.add('hidden');
+                    handleTransferFailure(gameState.activeFile);
                 }
             }
             requestAnimationFrame(gameLoop);
@@ -576,7 +599,7 @@
             transferInterfaceEl.classList.remove('hidden');
             puzzleViewEl.style.display = 'block';
 
-            const puzzle = puzzleList[Math.floor(Math.random() * puzzleList.length)];
+            const puzzle = file.assignedPuzzle;
             puzzle.init(file);
 
             instructionEl.textContent = puzzle.instructionText || '';
