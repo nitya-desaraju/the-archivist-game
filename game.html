@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -61,12 +61,12 @@
     <div class="scanline"></div>
     <div id="game-container" class="w-full max-w-6xl h-full relative crt-effect p-4">
         <video id="video" playsinline autoplay muted></video>
-        <button id="how-to-play-button" class="fixed top-10 right-10 bg-gray-800 text-yellow-400 border border-yellow-400 px-4 py-1 rounded-none hover:bg-yellow-400 hover:text-gray-900 transition-all text-sm">How to Play</button>
+        <button id="how-to-play-button" class="fixed top-4 right-4 bg-gray-800 text-yellow-400 border border-yellow-400 px-4 py-1 rounded-none hover:bg-yellow-400 hover:text-gray-900 transition-all text-sm z-40">How to Play</button>
         <div id="how-to-play-modal" class="hidden absolute inset-0 bg-black bg-opacity-90 flex justify-center items-center z-50 p-4">
             <div class="bg-black border border-gray-700 p-8 max-w-lg text-center crt-effect">
                 <h2 class="text-3xl text-yellow-400 mb-6" style="font-family: 'VT323', monospace;">INSTRUCTIONS</h2>
                 <p class="mb-4">Your mission: Complete the puzzles for each file to decrypt and recover the data and transfer it to the new data server.</p>
-                <p class="mb-8">But beware. The AI archivist will see and hear you if you try to move the data. It has gone <span class="text-red-700 font-bold">rogue</span>.</p>
+                <p class="mb-8">But beware. The AI archivist will see and hear you if you try to move the data. It may try to stop you. It has gone <span class="text-red-700 font-bold">rogue</span>.</p>
                 <button id="close-how-to-play-button" class="bg-gray-800 text-green-400 border border-green-400 px-6 py-2 rounded-none hover:bg-green-400 hover:text-gray-900 transition-all">CLOSE</button>
             </div>
         </div>
@@ -79,7 +79,7 @@
             <p id="permission-error" class="text-red-500 mt-4 hidden">Error: Camera and Microphone access are required.</p>
         </div>
 
-        <div id="game-screen" class="hidden h-full">
+        <div id="game-screen" class="hidden absolute inset-0 p-4">
             <div class="grid grid-cols-12 gap-4 h-full">
                 <div class="col-span-3 bg-black bg-opacity-25 p-4 border border-gray-700 flex flex-col">
                     <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">SYSTEM STATUS</h2>
@@ -102,10 +102,14 @@
                 </div>
                 <div id="main-panel" class="col-span-5 bg-black bg-opacity-25 p-4 border border-gray-700 overflow-y-auto flex flex-col">
                     <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">FILE VIEWER</h2>
-                    <div id="transfer-progress-module" class="hidden mt-4">
-                        <div class="w-full bg-gray-700 mb-2"><div id="transfer-bar" class="bg-green-500 h-2" style="width: 0%"></div></div>
-                        <p>Transferring file... <span id="transfer-progress">0%</span></p>
-                        <p id="transfer-warning" class="text-red-500 mt-2 hidden">WARNING: Anomaly is actively scanning. DO NOT MOVE. DO NOT MAKE A SOUND.</p>
+                    <div id="transfer-interface" class="hidden">
+                        <div id="puzzle-view" class="text-center">
+                            <p id="puzzle-timer-container" class="text-yellow-400">DECRYPTION REQUIRED: <span id="puzzle-timer"></span>s</p>
+                            <p id="transfer-warning" class="text-red-500 mt-1 hidden">WARNING: Anomaly is actively scanning.</p>
+                            <div id="puzzle-area" class="mt-2 p-2 border border-gray-700 bg-black bg-opacity-25 flex justify-center items-center min-h-[150px]">
+                            </div>
+                            <p id="puzzle-instructions" class="text-gray-400 mt-2 text-sm hidden"></p>
+                        </div>
                     </div>
                     <div id="file-content-viewer" class="flex-grow">
                         <p>> Select a file from the directory to view its contents.</p>
@@ -129,12 +133,78 @@
         const strikesCountEl = document.getElementById('strikes-count');
         const fileListEl = document.getElementById('file-list');
         const fileContentViewerEl = document.getElementById('file-content-viewer');
-        const transferProgressModuleEl = document.getElementById('transfer-progress-module');
-        const transferProgressBar = document.getElementById('transfer-bar');
-        const transferProgressText = document.getElementById('transfer-progress');
         const howToPlayButton = document.getElementById('how-to-play-button');
         const howToPlayModal = document.getElementById('how-to-play-modal');
         const closeHowToPlayButton = document.getElementById('close-how-to-play-button');
+
+        let puzzleTimer, puzzleTimerInterval;
+
+        function shuffle(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        //puzzles defs
+        const numberGridPuzzle = {
+            name: 'Number Sequence',
+            duration: 15000,
+            instructionText: 'Click the numbers in numerical order.',
+            init: function(file) {
+                const puzzleArea = document.getElementById('puzzle-area');
+                puzzleArea.innerHTML = '';
+                puzzleArea.style.display = 'grid';
+                puzzleArea.style.gridTemplateColumns = 'repeat(3, 1fr)';
+                puzzleArea.style.gap = '8px';
+                puzzleArea.style.width = '100%';
+
+                let nextExpectedNumber = 1;
+                const numbers = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
+
+                numbers.forEach(num => {
+                    const button = document.createElement('button');
+                    button.className = 'bg-gray-800 border border-gray-600 text-2xl aspect-square hover:bg-gray-700 transition-colors';
+                    button.textContent = num;
+                    button.onclick = () => {
+                        if (num === nextExpectedNumber) {
+                            nextExpectedNumber++;
+                            button.disabled = true;
+                            button.style.backgroundColor = '#166534';
+                            if (nextExpectedNumber > 9) {
+                                handlePuzzleSuccess(file);
+                            }
+                        } else {
+                            handlePuzzleFailure(file, 'Incorrect Sequence');
+                        }
+                    };
+                    puzzleArea.appendChild(button);
+                });
+            }
+        };
+
+        //puzzles
+        const puzzleList = [
+            numberGridPuzzle
+        ];
+
+        function handlePuzzleSuccess(file) {
+            clearTimeout(puzzleTimer);
+            clearInterval(puzzleTimerInterval);
+            document.getElementById('puzzle-view').style.display = 'none';
+            document.getElementById('puzzle-instructions').classList.add('hidden');
+            handleTransferSuccess(file);
+        }
+
+        function handlePuzzleFailure(file, reason) {
+            console.log(`Puzzle failed: ${reason}`);
+            clearTimeout(puzzleTimer);
+            clearInterval(puzzleTimerInterval);
+            document.getElementById('puzzle-view').style.display = 'none';
+            document.getElementById('puzzle-instructions').classList.add('hidden');
+            handleTransferFailure(file);
+        }
 
         //adjusted thresholds
         const config = {
@@ -159,7 +229,6 @@
         let gameState = {};
         let masterFileList = [];
         let audioContext, analyser, dataArray, lastFrame, canvasContext;
-        let transferTimeout, transferProgressInterval;
 
         function createFile(id, name, type, content) {
             return { id, name, type, content, isWatched: false, isTransferred: false };
@@ -301,12 +370,14 @@
             initializeFiles();
             filesTransferredCountEl.textContent = `0 / ${config.filesToTransfer}`;
             strikesCountEl.textContent = `0 / ${config.maxStrikes}`;
+            howToPlayButton.classList.remove('hidden');
         }
 
         function startGame() {
             resetGameState();
             startScreen.classList.add('hidden');
             gameScreen.classList.remove('hidden');
+            howToPlayButton.classList.add('hidden');
             displayFileList();
             viewFile(null, true);
             gameLoop();
@@ -320,7 +391,7 @@
                 const isNoisy = gameState.noiseLevel > config.noiseHighThreshold;
                 const isMoving = gameState.movementLevel > config.movementHighThreshold;
                 if (isNoisy || isMoving) {
-                    handleTransferFailure(gameState.activeFile);
+                    handlePuzzleFailure(gameState.activeFile, 'AI Activity Detected');
                 }
             }
             requestAnimationFrame(gameLoop);
@@ -343,7 +414,7 @@
             });
         }
 
-        function viewFile(fileId, isInitial = false, transferFailed = false) {
+        function viewFile(fileId, isInitial = false, failureType = null) {
             if (isInitial) {
                 fileContentViewerEl.innerHTML = `<p>> Select a file from the directory to view its contents.</p>`;
                 return;
@@ -363,9 +434,11 @@
             if (file.isTransferred) {
                 contentHTML += `<p class="text-green-400 mt-4">[FILE TRANSFERRED]</p>`
             }
-
-            if (transferFailed) {
+            
+            if (failureType === 'watched') {
                 contentHTML += `<p class="text-red-500 mt-4">[TRANSFER FAILED. ANOMALY DETECTED ACTIVITY.]</p><p class="text-red-700">[STRIKE ${gameState.strikes} of ${config.maxStrikes}]</p>`;
+            } else if (failureType === 'unwatched') {
+                contentHTML += `<p class="text-yellow-400 mt-4">[DECRYPTION FAILED. PLEASE TRY AGAIN.]</p>`;
             }
 
             if (!file.isTransferred) {
@@ -382,66 +455,83 @@
             if (dynamicTransferButton) {
                 dynamicTransferButton.addEventListener('click', () => startTransfer(file));
             }
-
-            transferProgressModuleEl.classList.add('hidden');
+            
+            const transferInterfaceEl = document.getElementById('transfer-interface');
+            if(transferInterfaceEl) transferInterfaceEl.classList.add('hidden');
         }
         
         function startTransfer(file) {
             if (gameState.isWatching) return;
 
             fileContentViewerEl.innerHTML = '';
-            transferProgressModuleEl.classList.remove('hidden');
-            transferProgressBar.style.width = '0%';
-            transferProgressText.textContent = '0%';
-
+            const transferInterfaceEl = document.getElementById('transfer-interface');
+            const puzzleViewEl = document.getElementById('puzzle-view');
+            const timerContainerEl = document.getElementById('puzzle-timer-container');
             const transferWarningEl = document.getElementById('transfer-warning');
+            const instructionEl = document.getElementById('puzzle-instructions');
+
+            transferInterfaceEl.classList.remove('hidden');
+            puzzleViewEl.style.display = 'block';
+
+            const puzzle = puzzleList[Math.floor(Math.random() * puzzleList.length)];
+            puzzle.init(file);
+
+            instructionEl.textContent = puzzle.instructionText || '';
+            instructionEl.classList.remove('hidden');
 
             if (file.isWatched) {
                 lastFrame = null;
                 gameState.isWatching = true;
                 entityStatusEl.textContent = 'WATCHING';
                 entityStatusEl.classList.replace('text-yellow-400', 'text-red-500');
-                transferWarningEl.classList.remove('hidden'); 
+                
+                timerContainerEl.style.display = 'block';
+                transferWarningEl.classList.remove('hidden');
+
+                const timerDisplay = document.getElementById('puzzle-timer');
+                let timeLeft = puzzle.duration;
+                timerDisplay.textContent = (timeLeft / 1000).toFixed(1);
+
+                puzzleTimerInterval = setInterval(() => {
+                    timeLeft -= 100;
+                    if (timeLeft < 0) timeLeft = 0;
+                    timerDisplay.textContent = (timeLeft / 1000).toFixed(1);
+                }, 100);
+
+                puzzleTimer = setTimeout(() => handlePuzzleFailure(file, 'Time ran out'), puzzle.duration);
             } else {
+                timerContainerEl.style.display = 'none';
                 transferWarningEl.classList.add('hidden');
             }
-
-            transferTimeout = setTimeout(() => handleTransferSuccess(file), config.transferTime);
-
-            let progress = 0;
-            transferProgressInterval = setInterval(() => {
-                progress += 100;
-                const percentage = Math.min(100, Math.floor(progress / config.transferTime * 100));
-                transferProgressBar.style.width = `${percentage}%`;
-                transferProgressText.textContent = `${percentage}%`;
-                if (percentage >= 100) clearInterval(transferProgressInterval);
-            }, 100);
         }
 
         function handleTransferFailure(file) {
-            if (!gameState.isWatching) return; 
+            const wasWatched = gameState.isWatching;
 
-            clearTimeout(transferTimeout);
-            clearInterval(transferProgressInterval);
+            clearTimeout(puzzleTimer);
+            clearInterval(puzzleTimerInterval);
 
-            gameState.isWatching = false;
-            gameState.strikes++;
-
-            entityStatusEl.textContent = 'DORMANT';
-            entityStatusEl.classList.replace('text-red-500', 'text-yellow-400');
-            strikesCountEl.textContent = `${gameState.strikes} / ${config.maxStrikes}`;
-            transferProgressModuleEl.classList.add('hidden');
+            if (wasWatched) {
+                gameState.isWatching = false;
+                gameState.strikes++;
+                entityStatusEl.textContent = 'DORMANT';
+                entityStatusEl.classList.replace('text-red-500', 'text-yellow-400');
+                strikesCountEl.textContent = `${gameState.strikes} / ${config.maxStrikes}`;
+            }
             
-            viewFile(file.id.toString(), false, true);
+            const transferInterfaceEl = document.getElementById('transfer-interface');
+            if(transferInterfaceEl) transferInterfaceEl.classList.add('hidden');
+            
+            viewFile(file.id.toString(), false, wasWatched ? 'watched' : 'unwatched');
 
-            if (gameState.strikes >= config.maxStrikes) {
+            if (wasWatched && gameState.strikes >= config.maxStrikes) {
                 gameOver();
             }
         }
 
         function handleTransferSuccess(file) {
-            clearInterval(transferProgressInterval);
-            transferProgressModuleEl.classList.add('hidden');
+            const transferInterfaceEl = document.getElementById('transfer-interface');
+            if(transferInterfaceEl) transferInterfaceEl.classList.add('hidden');
 
             if (gameState.isWatching) {
                 gameState.isWatching = false;
