@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -6,6 +6,11 @@
     <title>The Archivist Game</title>
     <link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=VT323&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script> <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
         body {
             font-family: 'Courier Prime', monospace;
             background-color: #0a0a0a;
@@ -57,9 +62,9 @@
     </style>
 </head>
 
-<body class="bg-black text-gray-300 flex items-center justify-center min-h-screen">
+<body class="bg-black text-gray-300">
     <div class="scanline"></div>
-    <div id="game-container" class="w-full max-w-6xl h-full relative crt-effect p-4">
+    <div id="game-container" class="w-full max-w-6xl h-full relative crt-effect p-4 mx-auto flex flex-col justify-center">
         <video id="video" playsinline autoplay muted></video>
         <button id="how-to-play-button" class="fixed top-4 right-4 bg-gray-800 text-yellow-400 border border-yellow-400 px-4 py-1 rounded-none hover:bg-yellow-400 hover:text-gray-900 transition-all text-sm z-40">How to Play</button>
         <div id="how-to-play-modal" class="hidden absolute inset-0 bg-black bg-opacity-90 flex justify-center items-center z-50 p-4">
@@ -79,7 +84,7 @@
             <p id="permission-error" class="text-red-500 mt-4 hidden">Error: Camera and Microphone access are required.</p>
         </div>
 
-        <div id="game-screen" class="hidden absolute inset-0 p-4">
+        <div id="game-screen" class="hidden h-full">
             <div class="grid grid-cols-12 gap-4 h-full">
                 <div class="col-span-3 bg-black bg-opacity-25 p-4 border border-gray-700 flex flex-col">
                     <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">SYSTEM STATUS</h2>
