@@ -1,4 +1,4 @@
-<!DOCTYPE html> 
+<!DOCTYPE html>
 <html lang="en"> 
 <head>
     <meta charset="UTF-8">
@@ -62,6 +62,40 @@
         }
         #file-list::-webkit-scrollbar-thumb:hover {
             background: #9ca3af;
+        }
+        .liquid-bar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 150px;
+        }
+        .liquid-bar {
+            width: 40px;
+            height: 100%;
+            border: 2px solid #6b7280;
+            position: relative;
+            background-color: #111827;
+            overflow: hidden;
+        }
+        .liquid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0;
+            background-color: #f97316; /* Orange-500 */
+            transition: background-color 0.3s;
+        }
+        .target-zone {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+        .fill-button {
+            width: 50px;
+            height: 30px;
+            margin-top: 8px;
         }
 
         /* make cam appear in corner to test video input */
@@ -168,7 +202,7 @@
 
         //puzzles defs
         const numberGridPuzzle = {
-            name: 'Number Sequence',
+            name: 'Initiation Sequence',
             duration: 10000,
             instructionText: 'Click the numbers in numerical order.',
             init: function(file) {
@@ -283,10 +317,113 @@
             }
         };
 
+        const liquidLevelPuzzle = {
+            name: 'Liquid Level Calibration',
+            duration: 15000,
+            instructionText: 'Hold the buttons to fill the bars to the highlighted zones.',
+            init: function(file) {
+                const puzzleArea = document.getElementById('puzzle-area');
+                puzzleArea.innerHTML = '';
+                puzzleArea.style.display = 'flex';
+                puzzleArea.style.justifyContent = 'space-around';
+                puzzleArea.style.alignItems = 'flex-end';
+                puzzleArea.style.width = '100%';
+
+                let intervals = { fill: null, drain: [null, null, null] };
+                let barStatus = [false, false, false];
+                const bars = [];
+
+                for (let i = 0; i < 3; i++) {
+                    const container = document.createElement('div');
+                    container.className = 'liquid-bar-container';
+
+                    const bar = document.createElement('div');
+                    bar.className = 'liquid-bar';
+
+                    const liquid = document.createElement('div');
+                    liquid.className = 'liquid';
+                    liquid.dataset.height = 0;
+
+                    const targetZone = document.createElement('div');
+                    targetZone.className = 'target-zone';
+                    const targetHeight = 20; // 20% height
+                    const targetBottom = Math.floor(Math.random() * (80 - targetHeight));
+                    targetZone.style.height = `${targetHeight}%`;
+                    targetZone.style.bottom = `${targetBottom}%`;
+
+                    bar.appendChild(liquid);
+                    bar.appendChild(targetZone);
+                    
+                    const button = document.createElement('button');
+                    button.className = 'fill-button bg-gray-800 border border-gray-600 rounded-md hover:bg-gray-700';
+                    const circle = document.createElement('div');
+                    circle.className = 'w-4 h-4 rounded-full bg-gray-500 mx-auto';
+                    button.appendChild(circle);
+
+                    const stopDrain = () => clearInterval(intervals.drain[i]);
+                    const startDrain = () => {
+                        stopDrain();
+                        intervals.drain[i] = setInterval(() => {
+                            let currentHeight = parseFloat(liquid.dataset.height);
+                            if (currentHeight > 0) {
+                                currentHeight -= 0.2;
+                                liquid.dataset.height = currentHeight;
+                                liquid.style.height = `${currentHeight}%`;
+                                checkLevels();
+                            }
+                        }, 20);
+                    };
+
+                    button.onmousedown = () => {
+                        stopDrain();
+                        intervals.fill = setInterval(() => {
+                            let currentHeight = parseFloat(liquid.dataset.height);
+                            if (currentHeight < 100) {
+                                currentHeight += 0.7;
+                                liquid.dataset.height = currentHeight;
+                                liquid.style.height = `${currentHeight}%`;
+                                checkLevels();
+                            }
+                        }, 20);
+                    };
+                    
+                    button.onmouseup = () => {
+                        clearInterval(intervals.fill);
+                        startDrain();
+                    };
+                    button.onmouseleave = button.onmouseup;
+
+                    container.appendChild(bar);
+                    container.appendChild(button);
+                    puzzleArea.appendChild(container);
+                    bars.push({ liquid, targetBottom, targetHeight });
+                }
+
+                function checkLevels() {
+                    let allAligned = true;
+                    bars.forEach((bar, index) => {
+                        const currentHeight = parseFloat(bar.liquid.dataset.height);
+                        const inZone = currentHeight >= bar.targetBottom && currentHeight <= bar.targetBottom + bar.targetHeight;
+                        
+                        bar.liquid.style.backgroundColor = inZone ? '#16a34a' : '#f97316';
+                        barStatus[index] = inZone;
+                        if (!inZone) allAligned = false;
+                    });
+
+                    if (allAligned) {
+                        clearInterval(intervals.fill);
+                        bars.forEach((bar, i) => clearInterval(intervals.drain[i]));
+                        handlePuzzleSuccess(file);
+                    }
+                }
+            }
+        };
+
         //puzzles
         const puzzleList = [
             numberGridPuzzle,
-            wireAlignmentPuzzle
+            wireAlignmentPuzzle,
+            liquidLevelPuzzle
         ];
 
         function handlePuzzleSuccess(file) {
