@@ -135,20 +135,24 @@
 
         <div id="game-screen" class="hidden h-full flex-1">
             <div class="grid grid-cols-12 gap-2 h-[calc(100%-100px)]">
-                <div class="col-span-3 bg-black bg-opacity-25 p-4 border border-gray-700 flex flex-col h-[calc(100vh-20px)]">
+                <div class="col-span-3 bg-black bg-opacity-25 p-4 border border-gray-700 flex flex-col">
                     <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">SYSTEM STATUS</h2>
-                    <p>USER: RECOVERY_TECH_7</p>
-                    <p>SERVER: DS-04</p>
-                    <div class="mt-6">
-                        <p>AI ANOMALY: <span id="entity-status" class="text-yellow-400">DORMANT</span></p>
-                        <p>MOVEMENT: <span id="movement-status" class="text-green-400">LOW</span></p>
-                        <p>NOISE: <span id="noise-status" class="text-green-400">LOW</span></p>
+                    <div id="status-normal">
+                        <p>USER: RECOVERY_TECH_7</p>
+                        <p>SERVER: DS-04</p>
+                        <div class="mt-6">
+                            <p>AI ANOMALY: <span id="entity-status" class="text-yellow-400">DORMANT</span></p>
+                            <p>MOVEMENT: <span id="movement-status" class="text-green-400">LOW</span></p>
+                            <p>NOISE: <span id="noise-status" class="text-green-400">LOW</span></p>
+                        </div>
+                            <div class="mt-8">
+                            <h3 class="text-xl text-green-400 mb-2" style="font-family: 'VT323', monospace;">MISSION PROGRESS</h3>
+                            <p>FILES TRANSFERRED: <span id="files-transferred-count">0 / 20</span></p>
+                            <p>DETECTION STRIKES: <span id="strikes-count">0 / 3</span></p>
+                        </div>
                     </div>
-                     <div class="mt-8">
-                        <h3 class="text-xl text-green-400 mb-2" style="font-family: 'VT323', monospace;">MISSION PROGRESS</h3>
-                        <p>FILES TRANSFERRED: <span id="files-transferred-count">0 / 20</span></p>
-                        <p>DETECTION STRIKES: <span id="strikes-count">0 / 3</span></p>
-                    </div>
+
+                    <p id="status-terminated" class="text-red-500 hidden">CONNECTION TERMINATED</p>
                 </div>
                 <div class="col-span-4 bg-black bg-opacity-25 p-4 border border-gray-700 flex flex-col h-[calc(100vh-20px)]">
                     <h2 class="text-2xl text-green-400 mb-4" style="font-family: 'VT323', monospace;">FILE DIRECTORY</h2>
@@ -162,6 +166,7 @@
                             <p id="transfer-warning" class="text-red-500 mt-1 hidden">WARNING: Anomaly is actively scanning.</p>
                             <div id="puzzle-area" class="mt-2 p-2 border border-gray-700 bg-black bg-opacity-25 flex justify-center items-center min-h-[150px]">
                             </div>
+                            <p id="puzzle-name" class="text-lg font-bold mt-3 hidden"></p>
                             <p id="puzzle-instructions" class="text-gray-400 mt-2 text-sm hidden"></p>
                         </div>
                     </div>
@@ -432,6 +437,7 @@
             
             setTimeout(() => {
                 document.getElementById('puzzle-view').style.display = 'none';
+                document.getElementById('puzzle-name').classList.add('hidden');
                 document.getElementById('puzzle-instructions').classList.add('hidden');
                 handleTransferSuccess(file);
             }, 500);
@@ -444,6 +450,7 @@
 
             setTimeout(() => {
                 document.getElementById('puzzle-view').style.display = 'none';
+                document.getElementById('puzzle-name').classList.add('hidden');
                 document.getElementById('puzzle-instructions').classList.add('hidden');
                 handleTransferFailure(file);
             }, 500);
@@ -615,6 +622,12 @@
                 strikes: 0,
                 activeFile: null,
             };
+            
+            const statusNormal = document.getElementById('status-normal');
+            if (statusNormal) statusNormal.classList.remove('hidden');
+            const statusTerminated = document.getElementById('status-terminated');
+            if (statusTerminated) statusTerminated.classList.add('hidden');
+
             initializeFiles();
             filesTransferredCountEl.textContent = `0 / ${config.filesToTransfer}`;
             strikesCountEl.textContent = `0 / ${config.maxStrikes}`;
@@ -731,6 +744,7 @@
             const puzzleViewEl = document.getElementById('puzzle-view');
             const timerContainerEl = document.getElementById('puzzle-timer-container');
             const transferWarningEl = document.getElementById('transfer-warning');
+            const puzzleNameEl = document.getElementById('puzzle-name');
             const instructionEl = document.getElementById('puzzle-instructions');
 
             transferInterfaceEl.classList.remove('hidden');
@@ -739,7 +753,9 @@
             const puzzle = file.assignedPuzzle;
             puzzle.init(file);
 
+            puzzleNameEl.textContent = puzzle.name;
             instructionEl.textContent = puzzle.instructionText || '';
+            puzzleNameEl.classList.remove('hidden');
             instructionEl.classList.remove('hidden');
 
             if (file.isWatched) {
@@ -816,10 +832,12 @@
 
         function gameOver() {
             gameState.isWatching = false;
+            document.getElementById('status-normal').classList.add('hidden');
+            document.getElementById('status-terminated').classList.remove('hidden');
             fileListEl.innerHTML = '<p class="text-red-500">CONNECTION TERMINATED</p>';
             fileContentViewerEl.innerHTML = `
                 <h2 class="text-3xl text-red-500 mb-4" style="font-family: 'VT323', monospace;">[FATAL ERROR]</h2>
-                <p>Detection limit reached. The anomaly has locked you out of the system.</p>
+                <p>You have appeared to be hostile. The anomaly has locked you out of the system.</p>
                 <p>Your connection has been severed.</p>
                 <p class="font-bold mt-2">MISSION FAILED.</p>
                 <button id="restart-button" class="mt-8 bg-gray-800 text-green-400 border border-green-400 px-6 py-2 rounded-none hover:bg-green-400 hover:text-gray-900 transition-all">ATTEMPT RECONNECTION</button>
