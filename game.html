@@ -623,7 +623,7 @@
 
         const signalSyncPuzzle = {
             name: 'Signal Synchronization',
-            duration: 15000,
+            duration: 25000,
             instructionText: 'Adjust sliders to match the blue target waveform.',
             init: function(file) {
                 const puzzleArea = document.getElementById('puzzle-area');
@@ -658,6 +658,18 @@
                     phase: parseFloat(phaseSlider.value),
                 };
 
+                const tolerance = { amp: 1, wave: 2, phase: 0.1 };
+
+                const isInitialMatch = () => Math.abs(playerWave.amp - targetWave.amp) < tolerance.amp &&
+                                          Math.abs(playerWave.wave - targetWave.wave) < tolerance.wave &&
+                                          Math.abs(playerWave.phase - targetWave.phase) < tolerance.phase;
+
+                while (isInitialMatch()) {
+                    targetWave.amp = 20 + Math.random() * 25;
+                    targetWave.wave = 30 + Math.random() * 70;
+                    targetWave.phase = Math.random() * Math.PI * 2;
+                }
+                
                 function drawWaves() {
                     ctx.clearRect(0, 0, canvas.width, canvas.height);
                     const centerY = canvas.height / 2;
@@ -679,21 +691,18 @@
                     }
                     ctx.stroke();
                 }
-
+                
                 function checkWin() {
                     const ampDiff = Math.abs(playerWave.amp - targetWave.amp);
                     const waveDiff = Math.abs(playerWave.wave - targetWave.wave);
                     const phaseDiff = Math.abs(playerWave.phase - targetWave.phase);
                     
-                    const tolerance = { amp: 1, wave: 2, phase: 0.1 };
-                    
                     if (ampDiff < tolerance.amp && waveDiff < tolerance.wave && phaseDiff < tolerance.phase) {
                         const allSliders = [ampSlider, waveSlider, phaseSlider];
                         allSliders.forEach(slider => {
-                            slider.style.backgroundColor = '#16a34a'; 
+                            slider.style.backgroundColor = '#16a34a';
                             slider.disabled = true;
                         });
-                        
                         handlePuzzleSuccess(file);
                     }
                 }
