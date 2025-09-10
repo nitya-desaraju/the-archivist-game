@@ -1300,14 +1300,32 @@
             document.getElementById('status-normal').classList.add('hidden');
             document.getElementById('status-terminated').classList.remove('hidden');
             fileListEl.innerHTML = '<p class="text-red-500">CONNECTION TERMINATED</p>';
+            
             fileContentViewerEl.innerHTML = `
                 <h2 class="text-3xl text-red-500 mb-4" style="font-family: 'VT323', monospace;">[FATAL ERROR]</h2>
                 <p>You have appeared to be hostile. The anomaly has locked you out of the system.</p>
                 <p>Your connection has been severed.</p>
-                <p class="font-bold mt-2">MISSION FAILED.</p>
-                <button id="restart-button" class="mt-8 bg-gray-800 text-green-400 border border-green-400 px-6 py-2 rounded-none hover:bg-green-400 hover:text-gray-900 transition-all">ATTEMPT RECONNECTION</button>
+                <p class="font-bold text-red-500 mt-2">MISSION FAILED.</p>
+                <div id="game-over-buttons" class="mt-8 flex flex-col items-center space-y-4"></div>
             `;
-            document.getElementById('restart-button').onclick = startGame;
+            setTimeout(() => {
+                const buttonContainer = document.getElementById('game-over-buttons');
+                if (!buttonContainer) return;
+
+                const restartButton = document.createElement('button');
+                restartButton.className = 'w-full bg-gray-800 text-green-400 border border-green-400 px-6 py-2 rounded-none hover:bg-green-400 hover:text-gray-900 transition-all';
+                restartButton.textContent = 'ATTEMPT RECONNECTION';
+                restartButton.onclick = startGame;
+                
+                const mainMenuButton = document.createElement('button');
+                mainMenuButton.className = 'w-full bg-gray-800 text-yellow-400 border border-yellow-400 px-6 py-2 rounded-none hover:bg-yellow-400 hover:text-gray-900 transition-all';
+                mainMenuButton.textContent = 'Return to Main Menu';
+                mainMenuButton.onclick = () => location.reload();
+
+                buttonContainer.appendChild(restartButton);
+                buttonContainer.appendChild(mainMenuButton);
+
+            }, 1000);
         }
 
         startButton.addEventListener('click', async () => {
