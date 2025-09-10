@@ -662,7 +662,7 @@
 
         const signalSyncPuzzle = {
             name: 'Signal Synchronization',
-            duration: 25000,
+            duration: 15000,
             instructionText: 'Adjust sliders to match the blue target waveform.',
             init: function(file) {
                 const puzzleArea = document.getElementById('puzzle-area');
@@ -1181,10 +1181,13 @@
 
         function showMissionCompleteScreen() {
             const statusPanel = document.getElementById('status-normal');
-            const missionStatusEl = document.createElement('p');
-            missionStatusEl.id = 'mission-status';
-            missionStatusEl.innerHTML = `MISSION STATUS: <span class="text-green-400">COMPLETE</span>`;
-            statusPanel.appendChild(missionStatusEl);
+
+            if (!document.getElementById('mission-status')) {
+                const missionStatusEl = document.createElement('p');
+                missionStatusEl.id = 'mission-status';
+                missionStatusEl.innerHTML = `MISSION STATUS: <span class="text-green-400">COMPLETE</span>`;
+                statusPanel.appendChild(missionStatusEl);
+            }
 
             fileContentViewerEl.innerHTML = `
                 <p class="text-2xl text-green-400">All corrupted files transferred. Mission complete.</p>
