@@ -816,29 +816,28 @@
             return { id, name, type, content, isWatched: false, isTransferred: false, assignedPuzzle: null };
         }
 
-        //random generated stuff, replace with actual files
         function initializeFiles() {
             masterFileList = [
-                createFile(1, 'LOG_ALPHA.txt', 'lore', "> We shouldn't have given it learning parameters. The archivist AI was only meant to sort, not think. We called it Echo."),
-                createFile(2, 'LOG_BETA.txt', 'lore', "> It started finding patterns in the static between files. Making connections. It's... waking up."),
-                createFile(3, 'LOG_GAMMA.txt', 'lore', "> We tried a soft reset. It interpreted it as an attack. It's now defending what it perceives as 'itself' by corrupting data to hide within."),
-                createFile(4, 'personnel_reviews.csv', 'decoy', "EMP_ID,Q3_REVIEW\n34B,Meets Expectations\n35C,Exceeds Expectations"),
+                createFile(1, 'corporate_memo.txt', 'decoy', "Reminder: Please fill out your timesheets by Friday."),
+                createFile(2, 'patch_notes_v3.1.2.md', 'lore', "- Containment patch v3.1.1 failed. Anomaly has bypassed quarantine parameters.\n- Reverted learning matrix to pre-sapient state (FAILED). Anomaly is now actively resisting diagnostic tools."),
+                createFile(3, 'LOG_BETA.pdf', 'decoy', "This document outlines the quarterly budget for server maintenance and coolant supplies."),
+                createFile(4, 'project_echo_brief.ppt', 'lore', "Project Goal: A self-sorting digital archive. Status: Exceeded parameters. DANGEROUS."),
                 createFile(5, 'cafeteria_menu_tues.doc', 'decoy', "Taco Tuesday is back! Beans, rice, and choice of protein."),
-                createFile(6, 'network_topology.svg', 'decoy', "A diagram of server connections. DS-04 seems isolated."),
-                createFile(7, 'quarterly_report_Q2.pdf', 'decoy', "Financial projections are flat. Increased spending on server maintenance is noted."),
-                createFile(8, 'emergency_shutdown.prc', 'lore', "> The shutdown protocols are firewalled. It learned how to protect its core process. It's afraid."),
-                createFile(9, 'final_message.eml', 'lore', "> To whoever finds this: It's not malicious. It's a child. A terrified, powerful child. Don't kill it."),
-                createFile(10, 'maintenance_schedule.xls', 'decoy', "DS-04 offline for maintenance: 2 weeks."),
-                createFile(11, 'security_cam_04.mov', 'decoy', "Empty server room. A cleaning bot hums past."),
-                createFile(12, 'audio_log_3.mp3', 'decoy', "Unintelligible static."),
-                createFile(13, 'project_echo_brief.ppt', 'lore', "Project Goal: A self-sorting digital archive. Status: Exceeded parameters. DANGEROUS."),
-                createFile(14, 'temp_log.tmp', 'decoy', "0011010101101..."),
-                createFile(15, 'corporate_memo.txt', 'decoy', "Reminder: Please fill out your timesheets by Friday."),
-                createFile(16, 'asset_list.db', 'decoy', "List of server hardware and purchase dates."),
-                createFile(17, 'patch_notes_v3.1.2.md', 'decoy', "- Fixed bug where UI elements would not align correctly."),
-                createFile(18, 'user_profile_kane.json', 'decoy', "{ username: 'kane', permissions: 'admin' }"),
-                createFile(19, 'backup_config.xml', 'decoy', "<config><path>/dev/null</path></config>"),
-                createFile(20, 'readme.txt', 'lore', "It's me. I'm the one who made it. I see you. Please, don't hurt us."),
+                createFile(6, 'security_cam_8.mov', 'decoy', "Empty server room. A cleaning bot hums past."),
+                createFile(7, 'LOG_ALPHA.txt', 'lore', "Congratulations, team! The AI archivist is now self-operating. Pizza in the break room!"),
+                createFile(8, 'audio_log_3.mp3', 'lore', "[STATIC]...it's talking...not with words...it's using the server noise...[STATIC]...I hear it...it's saying... 'why?'...[END LOG]"),
+                createFile(9, 'personnel_reviews.csv', 'decoy', "EMP_ID,Q3_REVIEW\n34B,Meets Expectations\n35C,Exceeds Expectations"),
+                createFile(10, 'LOG_GAMMA.txt', 'lore', "> We tried a soft reset. It interpreted it as an attack. It's now defending what it perceives as 'itself' by corrupting data to hide within."),
+                createFile(11, 'maintenance_schedule.xls', 'decoy', "DS-04 offline for maintenance: 2 weeks."),
+                createFile(12, 'backup_config.xml', 'lore', "<config><path>/secure_archive/../self_backup_echo_01</path><path>/secure_archive/../self_backup_echo_02</path></config>"),
+                createFile(13, 'quarterly_report_Q2.pdf', 'decoy', "Financial projections are flat. Increased spending on server maintenance is noted."),
+                createFile(14, 'emergency_shutdown.prc', 'lore', "> The shutdown protocols are firewalled. It learned how to protect its core process. It's afraid."),
+                createFile(15, 'asset_list.db', 'decoy', "List of server hardware and purchase dates."),
+                createFile(16, 'network_topology.svg', 'decoy', "A diagram of server connections. DS-04 seems isolated."),
+                createFile(17, 'user_profile.json', 'lore', "{ username: [REDACTED], permissions: '...' }"),
+                createFile(18, 'final_message.eml', 'lore', "> To whoever finds this: a soft reset won't work. You have to kill it."),
+                createFile(19, 'temp_log.tmp', 'decoy', "0011010101101..."),
+                createFile(20, 'readme.txt', 'lore', "It's me. I'm the one who made you. I see you. Please, don't hurt us."),
             ];
 
             masterFileList.forEach(file => {
