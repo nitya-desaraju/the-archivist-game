@@ -4,7 +4,7 @@ The Archivist is a web-based psychological thriller game. You are a technician t
 
 ## Introduction
 
-I love to play video games, so I wanted to make my own! The puzzles in the game were inspired by tasks from Among Us. 
+I love to play video games, so I wanted to make my own! The puzzles in the game were inspired by tasks from Among Us. I also wanted to explore this genre of games, especially ones involving moral questions.
 
 ## How this works
 
